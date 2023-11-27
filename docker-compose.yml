@@ -1,0 +1,14 @@
+version: '3'
+services:
+  server:
+    container_name: koodaamo-cdn
+    build: .
+    depends_on:
+      - mongo
+      
+  mongo:
+    image: mongo:latest
+    restart: unless-stopped
+    hostname: nest-mongo
+    volumes:
+      - ./data/mongo:/data/mongo

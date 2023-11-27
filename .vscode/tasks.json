@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "docker-run: debug",
+            "type": "docker-run",
+            "dependsOn": ["docker-compose: debug"],
+            "dockerRun": {                
+                "remove": true,
+                "containerName": "koodaamo-cdn-debug",
+                "image": "koodaamo-cdn-server:latest",
+                "volumes": [
+                    {
+                        "containerPath": "/usr/src/app",
+                        "localPath": "${workspaceFolder}",
+                    }
+                ],
+                "ports": [
+                    {
+                        "hostPort": 3000,
+                        "containerPort": 3000 
+                    }
+                ],
+                "command": "nest start --debug 0.0.0.0:9229",
+            },
+            "node": {
+                "enableDebugging": true,
+            }
+        },
+        {
+            "type": "docker-compose",
+            "label": "docker-compose: debug",
+            "dockerCompose": {
+                "up": {
+                    "build": true,
+                    "detached": true,
+                     "files": [
+                        "${workspaceFolder}/docker-compose.yml",
+                        "${workspaceFolder}/docker-compose.dev.yml"
+                    ],
+                },
+            }
+        },
+    ]
+}

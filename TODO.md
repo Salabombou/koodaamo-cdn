@@ -1,0 +1,2 @@
+- Make NestJS logs show on vscode debug console
+- Make the debugger handle restarts
