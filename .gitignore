@@ -1,37 +1,30 @@
-# compiled output
-dist
-node_modules
-
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# OS
-.DS_Store
-
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
+# Local environment and credentials
 .env
+.env.*
+!.env.example
+
+# Local WireGuard state and exported peer credentials
+/config/
+/wireguard-config/
+/peer*/
+**/wg_confs/
+**/peer_*.conf
+**/peer_*.png
+**/privatekey*
+**/presharedkey*
+*.key
+
+# Local share data and backups
+/data/
+/shared/
+/backups/
+*.log
+
+# Editor and OS temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

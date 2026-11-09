@@ -1,0 +1,112 @@
+# Copy .env.example to .env and fill in the endpoint and SMB password.
+# Mount the SSD at /mnt/external-ssd before creating its shared/ directory.
+# Confirm it is mounted (mountpoint /mnt/external-ssd) before starting this stack.
+# The share must be owned by PUID:PGID; group-readable files support HTTP access.
+# Forward UDP 65298 to this host. No SMB port should be forwarded or published.
+# Host Nginx upstream: http://127.0.0.1:56766
+# VPN share: \\10.13.13.1\Koodaamo CDN (TCP 445 only; no NetBIOS/discovery).
+services:
+  samba:
+    image: dockurr/samba
+    restart: unless-stopped
+    network_mode: service:wg
+    depends_on:
+      wg:
+        condition: service_healthy
+        restart: true
+    environment:
+      NAME: Koodaamo CDN
+      USER: ${SAMBA_USER:-samba}
+      PASS: ${SAMBA_PASSWORD:?Set SAMBA_PASSWORD in .env}
+      UID: ${PUID:-1000}
+      GID: ${PGID:-1000}
+    volumes:
+      - type: bind
+        source: ${SSD_PATH:-/mnt/external-ssd/shared}
+        target: /shared
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./smb.conf
+        target: /etc/samba/smb.default
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          PASSWD="$$PASS" smbclient --configfile=/etc/samba/smb.tmp
+          "//10.13.13.1/Koodaamo CDN" -U "$$USER" -m SMB3 -c quit >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  wg:
+    image: linuxserver/wireguard
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      SERVERURL: ${WG_SERVERURL:?Set WG_SERVERURL to the public hostname or IP in .env}
+      SERVERPORT: "65298"
+      PEERS: ${WG_PEERS:-client}
+      PEERDNS: "1.1.1.1"
+      INTERNAL_SUBNET: "10.13.13.0"
+      ALLOWEDIPS: "10.13.13.1/32"
+      LOG_CONFS: "false"
+    ports:
+      - "65298:51820/udp"
+    volumes:
+      - wireguard-config:/config
+      - type: bind
+        source: ./wireguard-server.conf
+        target: /config/templates/server.conf
+        read_only: true
+        bind:
+          create_host_path: false
+    sysctls:
+      net.ipv4.conf.all.src_valid_mark: "1"
+      net.ipv4.ip_forward: "0"
+      net.ipv6.conf.all.forwarding: "0"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wg show wg0 >/dev/null &&
+          iptables -C INPUT -i wg0 -j WG_SMB &&
+          iptables -C INPUT -i eth0 -p tcp --dport 445 -j DROP &&
+          iptables -C WG_SMB -p tcp --dport 445 -j ACCEPT &&
+          iptables -C WG_SMB -j DROP &&
+          iptables -C FORWARD -i wg0 -j DROP &&
+          iptables -C FORWARD -o wg0 -j DROP
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  nginx:
+    image: nginxinc/nginx-unprivileged:stable-alpine
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "127.0.0.1:56766:8080/tcp"
+    volumes:
+      - type: bind
+        source: ${SSD_PATH:-/mnt/external-ssd/shared}
+        target: /shared
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        bind:
+          create_host_path: false
+
+volumes:
+  wireguard-config:
