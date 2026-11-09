@@ -1,0 +1,30 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+
+# Local WireGuard state and exported peer credentials
+/config/
+/wireguard-config/
+/peer*/
+**/wg_confs/
+**/peer_*.conf
+**/peer_*.png
+**/privatekey*
+**/presharedkey*
+*.key
+
+# Local share data and backups
+/data/
+/shared/
+/backups/
+*.log
+
+# Editor and OS temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
