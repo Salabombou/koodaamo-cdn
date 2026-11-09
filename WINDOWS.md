@@ -1,6 +1,7 @@
 # Windows setup
 
-This guide maps the Samba share as drive `S:` and reconnects it silently at login.
+This guide maps the Samba share as drive `S:` and reconnects it at login using
+Task Scheduler and `cmd.exe /c net use`.
 Use another unused drive letter if needed.
 
 ## 1. Install and import WireGuard
@@ -44,7 +45,7 @@ confirm **Latest handshake** refreshes when attempting the TCP test.
    - Password: the server's `SAMBA_PASSWORD`
 
 These credentials are distinct from your Windows login and WireGuard keys.
-Do not put the password in a scheduled task or script.
+Do not put the password in the scheduled task.
 
 ## 4. Map the drive manually
 
@@ -84,29 +85,7 @@ Closing the WireGuard window does not deactivate the tunnel. Clicking
 **Deactivate** does. Test after a reboot; the drive-mapping task below does not
 activate WireGuard itself.
 
-## 6. Create a hidden drive-mapping script
-
-Create a folder such as `C:\Scripts`, then save this as
-`C:\Scripts\connect-samba.vbs`:
-
-```vbscript
-Set shell = CreateObject("WScript.Shell")
-result = shell.Run("net.exe use S: ""\\10.13.13.1\Koodaamo CDN"" /persistent:yes", 0, True)
-WScript.Quit result
-```
-
-In Notepad, use **Save as type: All files** so the filename does not end in
-`.vbs.txt`.
-
-The `0` hides the command window. `True` waits for completion, and the final
-line returns the command's exit code so Task Scheduler can retry failures.
-The doubled quotes preserve the space in the share name.
-
-VBScript is deprecated and may be unavailable or disabled on newer or managed
-Windows installations. This method requires Windows Script Host and VBScript
-to be available; do not bypass an organization's script restrictions.
-
-## 7. Configure Task Scheduler
+## 6. Configure Task Scheduler
 
 Open **Task Scheduler** and select **Create Task**, not Create Basic Task.
 
@@ -136,14 +115,18 @@ Add **Start a program**:
 Program/script:
 
 ```text
-C:\Windows\System32\wscript.exe
+C:\Windows\System32\cmd.exe
 ```
 
 Add arguments:
 
 ```text
-//B //Nologo "C:\Scripts\connect-samba.vbs"
+/c net use S: "\\10.13.13.1\Koodaamo CDN" /persistent:yes
 ```
+
+`/c` runs the mapping command and closes the window afterward. A Command Prompt
+window may briefly appear. The command's exit code lets Task Scheduler detect
+failures and retry.
 
 ### Conditions
 
@@ -159,15 +142,15 @@ Add arguments:
 - Set **Attempt to restart up to: 10 times**.
 - If the task is already running: **Do not start a new instance**.
 
-The task's **Hidden** checkbox does not hide command windows; the script does.
+The task's **Hidden** checkbox does not hide command windows.
 
-## 8. Test automatic connection
+## 7. Test automatic connection
 
 1. Connect WireGuard.
 2. Right-click the task and select **Run**.
 3. Check File Explorer for drive `S:`.
 4. Check **Last Run Result** in Task Scheduler; successful completion is `0x0`.
-5. Reboot and log in to verify both tunnel startup and silent drive mapping.
+5. Reboot and log in to verify both tunnel startup and automatic drive mapping.
 
 Windows also attempts to restore persistent mappings, but it may show the drive
 as disconnected until the VPN is ready or the drive is opened.
@@ -210,9 +193,9 @@ before reconnecting.
 Verify the task runs as your normal user, **only when logged on**, and without
 highest privileges. Test the mapping command in a non-elevated terminal.
 
-### No window, but no mapped drive
+### Task runs, but no mapped drive
 
 Check **Last Run Result** and enable Task Scheduler history if necessary.
-The hidden script deliberately suppresses windows, not errors: failures are
-returned to Task Scheduler. Run the `net use` command manually to see the
-underlying error message.
+The Command Prompt window closes when the command finishes, including on failure.
+Run the `net use` command in an already-open Command Prompt to see the underlying
+error message.

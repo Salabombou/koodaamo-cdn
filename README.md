@@ -23,8 +23,8 @@ and symbolic links are not served.
 reverse proxy can read the shared files, independently of SMB credentials or
 WireGuard access. Configure HTTPS and any required access controls on that proxy.
 
-See [Windows setup](WINDOWS.md) for VPN installation, drive mapping, and automatic
-connection.
+See [Windows setup](WINDOWS.md) for VPN installation, saved SMB credentials, and
+automatic drive mapping using a Task Scheduler `cmd.exe /c net use` action.
 
 ## Requirements
 
