@@ -16,8 +16,11 @@ TCP `445` and blocks forwarding to other networks and VPN peers. Clients route
 only `10.13.13.1/32` through the VPN; this is not an Internet VPN.
 
 Samba and Nginx mount the same SSD directory. Samba can write; Nginx has a
-read-only mount and allows only GET/HEAD. HTTP directory listings are enabled,
-symbolic links are not served, and automatic directory redirects are relative
+read-only mount and allows only GET/HEAD. HTTP directory listings are enabled
+except under dot-prefixed directories at any depth (for example,
+`/.under-the-sink/` or `/photos/.private/`). Files beneath them are accessible,
+but the directories themselves and their nested directory paths return 404.
+Symbolic links are not served, and automatic directory redirects are relative
 so they retain the public HTTPS host and do not expose the container port.
 
 **HTTP has no authentication in this stack.** Anyone allowed through your host
@@ -26,6 +29,7 @@ WireGuard access. Configure HTTPS and any required access controls on that proxy
 
 See [Windows setup](WINDOWS.md) for VPN installation, saved SMB credentials, and
 automatic drive mapping using a Task Scheduler `cmd.exe /c net use` action.
+See [Linux client setup](LINUX.md) for split-tunnel WireGuard and SMB mounting.
 
 ## Requirements
 
