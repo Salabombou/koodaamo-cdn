@@ -17,7 +17,8 @@ only `10.13.13.1/32` through the VPN; this is not an Internet VPN.
 
 Samba and Nginx mount the same SSD directory. Samba can write; Nginx has a
 read-only mount and allows only GET/HEAD. HTTP directory listings are enabled,
-and symbolic links are not served.
+symbolic links are not served, and automatic directory redirects are relative
+so they retain the public HTTPS host and do not expose the container port.
 
 **HTTP has no authentication in this stack.** Anyone allowed through your host
 reverse proxy can read the shared files, independently of SMB credentials or
